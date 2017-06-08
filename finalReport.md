@@ -109,12 +109,14 @@
         * 해당 과목에 관심이 있는 인원 명시를 통한 경쟁 가능성 제시로 수강 인원 분산 유도
         * 추천 시스템 사용 유도
         * 플로우차트(다음페이지 상세)
-        <img src = '/img/flowchart.png'/>
+        <img src = '/img/flowchart.png' height = 1030/>
 
 ### 개발 방법
-- 사용한 open source libraries or APIs, 사용한 외부 data sources
-- 위와 같은 외부 resource를 사용한 경우 반드시 정확히 명시 (새로 개발한 것과 기존의 것을 가져다 쓴 것을 명확히 구분하여 설명할 것)
 - 개발 일정 및 팀원간 역할 분담
+    - Recommendation part(한정)
+    - Application part(이강호)
+    <img src = '/img/gantt.png' height = 1030/>
+
 - Web Application 개발을 위한 Open Source
   - React
       - facebook에서 만든 유저인터페이스 라이브러리
@@ -149,26 +151,49 @@
   - beautifulsoup4
       - 파이썬기반의 html 파싱 라이브러리
 - 추천 : **특정 교수님의 강의를 추천해줍니다.**
-    * 사용하는 방식 : Collaborative filtering
+    * 사용하는 방식 : **Collaborative filtering**
+        * 사용자의 평가 내용을 이용합니다.
+        * 과거 입력해 놓은 아이템을 기반으로 미래 아이템을 예측합니다.
+        * 데이터가 많아질 수록 높은 만족도를 나타낸다.
+        * 데이터가 적을 경우 Cold start가 있습니다.
+        * Collaborative filtering을 선택한 이유
+            1. Content-based에서 추천해줄 Item을 어떻게 모델링 하느냐에 따라 추천의 질이 크게 달라 지는데 개인의 임의대로 카테고리를 나눠 분석하는 것이 만족성이 높은 추천을 하기 어려울 것 이라 생각했습니다.
+            2. 4학년 학생이 들은 과목은 많아야 35~40개 내외. 많아야 40개의 점수를 사용자들이 입력하는데 크게 어려움이 없을 것이라 예상했습니다.
+            3. 졸업자들의 데이터가 강력하게 사용 될 수 있을 것이라 생각했습니다.(빠른수집또한 가능할 것이라 생각)
+            3. Content-based를 사용했을 때 결과 예측이 쉬웠다. 실제로 이 프로그램을 사용했을 때 만족도 있는 추천을 할 지 궁금했습니다.
         * 유사도 측정
             1. Cosine-similarity : 가장 많이 사용하는 방식. sparse한 데이터에 적합합니다.
             2. Manhattan Distance / Euclidean Distance : Missing value가 적을 때 효과를 발휘한다. dense한 데이터에 많이 사용합니다.
             3. Pearson Correlation Coefficient : grade-inflation 이 있는 곳에 적합합니다.
         * 저희의 점수 입력방식은 학생들이 모든 데이터를 입력할 것이란 보장이 없기에 sparse한 데이터 구조를 띄게 될 것입니다.
             * 그래서 시작을 Cosine-similarity로 하게 되었습니다.
-            * 이후 MAE가 낮게 나와 신뢰도가 낮게 판단이 된다면 다른 방식을 찾아 반영할 예정입니다.
-    * 실제 구현하는 방식
-        1. 먼저 개인의 강의 성향을 파악하기 위해 수강했던 과목에 점수를 입력하게 됩니다.(1점 ~ 10점)
+            <img src = '/img/cos.png'/>
+                * 내적공간의 두 벡터간 각도의 코사인 값을 이용하여 유사한 정도를 측정
+                * 두 벡터의 방향이 같으면 1, 완전히 다른 반대가 될 경우 -1, 독립적인 경우 0
+                * 양수 공간이라는 조건만 만족하면 얼마나 많은 차원 공간에서든지 사용가능
+                <img src = '/img/cos2.png' width = 500/>
+                <img src = '/img/cos3.png' width = 600/>
+                * 계산 예제입니다.
+                <img src = '/img/cos4.png' width = 600/>
+                * 예측점수 계산 예제입니다.
+                * 각 유저끼리의 유사도를 구하여 그 유사도와 전체 유사도의 합의 비율에 점수를 곱하여 예측점수를 내게 됩니다.
+    * 구현방식
+        1. 먼저 개인의 강의 성향을 파악하기 위해 수강했던 과목에 점수를 입력하게 됩니다.(1점 ~ 5점)
         2. 입력받은 점수를 기반으로 각 사용자들과 Similarity를 구하게 됩니다. 이 방식으로 Cosine-similarity를 사용합니다.
         3. 유사도를 구하여 가장 유사도가 높은 K명의 집단을 구합니다.
             * 여기서 저희는 계산횟수와 신뢰성을 높이기 위해 과 내에서 검색을 하게 됩니다.
+            * 현재 구현 상태에서는 10명의 유사집단으로 계산하게 됩니다.
         4. K명의 유사집단 내에서 제가 듣지 않은 과목을 찾고 그 과목에 해당하는 예상 평점을 유사도를 이용하여 계산합니다.
         5. 이후 이 예상 평점이 높은 과목을 추천하게 됩니다.
             * 만약 그 과목을 수강하고 이후에 그 과목에 대한 평점을 입력 했을 때 MAE를 계산하게 됩니다.
             * 주기적으로 유저의 MAE를 확인하여 제대로 추천이 되고 있는지 판단하여 알고리즘을 개선합니다.
+    * 성과 측정 방식 : **MAE(Mean Absolute Error)**
+        <img src = '/img/mae.png'/>
+        * 수치적 데이터 평가방법
+        * 예측점수와 실제 평가점수의 차를 받아 과목, 유저수로 나눠 평균 오차율을 계산합니다.
 - 가용 가능한 data sources
     - sugang.inha.ac.kr에서 수강가능한 시간표
-        - 크롤링 후 사용
+        - 크롤링 후 가공하여 사용
     - 에전 총 학생회에서 조사한 주관식 교양 백서
         - 사용불가
     - 인하대학교 정보통신처에서 학생들의 수강신청 기록들
@@ -176,33 +201,78 @@
     - '인하대학교 시간표'에서 데이터 요청
         - 작년 가을 시간표 데이터로 사용
     - 크롤링한 데이터를 바로 사용할 수 있는 상태가 아니기 때문에 가공하여 사용
-    - 학생들이 입력한 데이터 사용
+    - 학생들이 입력한 데이터
+        - 이 데이터를 기반으로 추천을 하게 됩니다.
 
 - DB구성 예정(다음페이지 상세)
-<img src = '/img/db.png'/>
+<img src = '/img/db.png' height = 1030/>
 
 ### 개발 결과
 - 최종 결과물에 대한 스크린샷
-    * #추가필요#
+    #업데이트 필요#
+
+    <img src = '/img/res1.png'/>
+    * 로그인 화면입니다.
+
+    <img src = '/img/res2.png'/>
+    * 회원가입 화면입니다.
+
+    <img src = '/img/res3.png'/>
+    * 비밀번호 찾기 화면입니다.
+
+    <img src = '/img/res4.png'/>
+    * 비밀번호 찾기 두번째 화면입니다.
+
+    <img src = '/img/res5.png'/>
+    * 찾기를 요청하면 메일로 오게 됩니다.
+
+    <img src = '/img/res9.png'/>
+    * 비밀번호 수정이 가능해 진 화면입니다.
+
+    <img src = '/img/res6.png'/>
+    * 평가 화면입니다.
+
+    <img src = '/img/res7.png'/>
+    * 평가한 강의를 볼 수 있는 화면입니다.
+
+    <img src = '/img/res8.png'/>
+    * 강의를 추천해주는 화면입니다.
+
+    <img src = '/img/res10.jpeg' height=500/>
+    * 모바일 환경 화면입니다. 로그인 화면입니다.
+
+    <img src = '/img/res11.jpeg' height=500/>
+    * 모바일 환경 화면입니다. 평가 화면입니다.
+
+    <img src = '/img/res13.jpeg' height=500/>
+    * 모바일 환경 화면입니다. 평가한 것을 보여주는 화면입니다.
+
+    <img src = '/img/res12.jpeg' height=500/>
+    * 모바일 환경 화면입니다. 추천 받기 화면입니다.
+
 - demo 동영상 youtube 링크
-    * #추가필요#
-- 기능적 요구사항 및 비기능적 요구사항에 대한 달성도
-    * #추가필요#
+    * 링크 : https://youtu.be/NfAYpNKgrYk
+    * 느린속도 동영상 링크 : https://www.youtube.com/watch?v=xTLkatgDOXE
 - 테스트 결과 (정량적 수치 및 객관적 데이터 제시)
-    * #추가필요#
+    * 추천 서버와 Application 서버의 통신 정도
+        * SQS 그래프 보여주기
+        * #업데이트 필요#
+    * MAE 수치
+        * ~일 ~개의 과목, ~명의 데이터 : MAE수치 ()
+        * #업데이트 필요#
 
 
 ### 결론
 * 향후 활용 방안
     * 짧게는 다음학기 길게는 계속되는 수강신청 시기에 강의 추천 및 시간표 작성이 가능해집니다.
+    * 데이터가 많이 쌓이면 쌓일수록 유저는 더 나은 추천을 받게 됩니다.
 * 추가 진행 및 개선 방안
     * 강의 평가에 대한 코멘트를 넣어 opinion mining을 통한 좀 더 구체적인 추천을 해보려고 합니다.
-    * 학생들의 악의적으로 입력하는 데이터의 필터링 문제
-    * 학생들의 지속적인 유입 방안 필요
+    * 학생들의 악의적으로 입력하는 데이터의 필터링 문제가 있습니다.
+    * 학생들의 지속적인 유입 방안 필요합니다.
 * 프로젝트 진행하면서 느낀 점
-    * #추가필요#
-* 다음 학기 수강생들을 위해 제안할 점
-    * #추가필요#
+    * 데이터를 수집하는 과정이 너무 짧아 개선되는 모습을 많이 담지 못해 아쉬운것 같습니다.
+    * 프로젝트를 완성하여 약 100명 정도의 사용자를 받고 서비스를 제공하여 좋은 경험이었습니다.
 
 ##### 참고문헌
 
@@ -220,3 +290,4 @@
 12. Stanford Jeffrey D. Ullman mining massive datasets, "Recommendation System", http://infolab.stanford.edu/~ullman/mmds/ch9.pdf
 13. 카이스트 제 8회 ROSAEC 워크샵자료 Recommendation System "협업 필터링을 중심으로", http://rosaec.snu.ac.kr/meet/file/20120728b.pdf
 14. GroupLens Research Group / Army HPC Research Center. *"Application of Dimensionality Reduction in Recommender System -- A Case Study"*, WebKDD-2000 Workshop, 2000
+15. Mean absolute error, "Mean Absolute Error",https://en.wikipedia.org/wiki/Mean_absolute_error#cite_note-:0-1
